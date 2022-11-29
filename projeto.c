@@ -5,9 +5,9 @@
 
 #define TRUE_EMPTY "$$$$$$$$$$$$$"
 #define FAKE_EMPTY "#############"
-#define MAX_ITENS_INSERCAO 3
+#define MAX_ITENS_INSERCAO 10
 #define MAX_ITENS_BUSCA 2
-#define MAX_ITENS_REMOCAO 2
+#define MAX_ITENS_REMOCAO 3
 #define N 31
 
 typedef struct s_livro {
@@ -238,6 +238,7 @@ void insereRegistro(LIVRO* dados, FILE** fp_biblioteca, FILE** fp_hash) {
 
     char* temp = malloc(14 * sizeof(char));
     do {
+    	printf("hash no comeco: %d\n", hash);
         if (hash >= N) { //quando atinge o final do arquivo
             if (posicaoVerdadeira == 0) {
                 break;
@@ -267,6 +268,7 @@ void insereRegistro(LIVRO* dados, FILE** fp_biblioteca, FILE** fp_hash) {
             fwrite(&key.bOS, sizeof(int), 1, *fp_hash);
             escreveu = true;
         }
+        printf("hash no final: %d\n", hash);
     }while(!escreveu);
 
     if (escreveu) {
@@ -348,20 +350,103 @@ void removeRegistro(char** dados, FILE** fp_biblioteca, FILE** fp_hash) {
     
     if (encontrou) {
         printf("Chave %s removida com sucesso\n", key);
-        b++;
-        fseek(*fp_biblioteca, sizeof(int), SEEK_SET);
-        fwrite(&b, sizeof(int), 1, *fp_biblioteca);
     } else {
         printf("Chave %s nao encontrada\n", key);
     }
 
+	b++;
+    fseek(*fp_biblioteca, sizeof(int), SEEK_SET);
+    fwrite(&b, sizeof(int), 1, *fp_biblioteca);
+        
     bibliotecaClose(fp_biblioteca);
     fclose(*fp_hash);
     free(temp);
     free(fake);
+    
     return;
 }
 
 void buscaRegistro(char** dados, FILE** fp_biblioteca, FILE** fp_hash) {
+	int c; //numero de buscas realizadas
+
+    if(!bibliotecaOpen(fp_biblioteca)) {
+        printf("Nenhum registro inserido!\n");
+        return;
+    }
+
+    fseek(*fp_biblioteca, 2*sizeof(int), SEEK_SET);
+    fread(&c, sizeof(int), 1, *fp_biblioteca);
+    
+    if (c == MAX_ITENS_BUSCA) {
+        printf("Todos os registros foram buscados!\n");
+        bibliotecaClose(fp_biblioteca);
+        return;
+    }
+
+    *fp_hash = fopen("hash.bin", "r+b");
+    if (*fp_hash == NULL) {
+        printf("Falha ao abrir o arquivo de hash!\n");
+        return;
+    }
+	
+	char* key = malloc(14 * sizeof(char));
+	strcpy(key, dados[c]);
+	
+	int hash = divisaoInteira(atoll(key));
+	int posicaoVerdadeira = hash;
+	int acessos = 0;
+	bool encontrou = false;
+//	char* temp = malloc(14 * sizeof(char));
+	CHAVE chave;
+	
+	do {
+		if (hash >= N){
+			if (posicaoVerdadeira == 0){
+				break;
+			}
+			hash = 0;
+		}
+		if (hash == posicaoVerdadeira - 1) {
+            break;
+        }
+		
+		fseek(*fp_hash, hash * TAM_CHAVE, SEEK_SET);
+		fread(chave.isbn, sizeof(char), 13, *fp_hash);
+		chave.isbn[13] = '\0';
+		
+		acessos++;
+		
+		if (strcmp(chave.isbn, TRUE_EMPTY) == 0) {
+			break;
+		} else if (strcmp(key, chave.isbn) == 0) {
+			fread(&chave.bOS, sizeof(int), 1, *fp_hash);
+			encontrou = true;
+		}
+		hash++;
+	}while(!encontrou);
+	
+	LIVRO livro_temp;
+	
+	if(encontrou){
+		printf("Chave %s encontrada, endereço %d, %d acessos\n", key, hash-1, acessos);
+		//printa o registro encontrado
+		fseek(*fp_biblioteca, chave.bOS, SEEK_SET);
+		fread(&livro_temp, sizeof(LIVRO), 1, *fp_biblioteca);
+		printf("ISBN: %s\n", livro_temp.isbn);
+		printf("Titulo: %s\n", livro_temp.titulo);
+		printf("Autor: %s\n", livro_temp.autor);
+		printf("Ano: %s\n", livro_temp.ano);
+	} else {
+		printf("Chave %s nao encontrada\n", key);
+	}
+	
+	c++;
+	fseek(*fp_biblioteca, 2*sizeof(int), SEEK_SET);
+    fwrite(&c, sizeof(int), 1, *fp_biblioteca);
+    
+	bibliotecaClose(fp_biblioteca);
+	fclose(*fp_hash);
+	free(key);
+	
     return;
 }
