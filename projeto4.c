@@ -5,9 +5,9 @@
 
 #define TRUE_EMPTY "$$$$$$$$$$$$$"
 #define FAKE_EMPTY "#############"
-#define MAX_ITENS_INSERCAO 10
-#define MAX_ITENS_BUSCA 3
-#define MAX_ITENS_REMOCAO 3
+#define MAX_ITENS_INSERCAO 15
+#define MAX_ITENS_BUSCA 4
+#define MAX_ITENS_REMOCAO 5
 #define N 31
 
 typedef struct s_livro {
@@ -238,7 +238,7 @@ void insereRegistro(LIVRO* dados, FILE** fp_biblioteca, FILE** fp_hash) {
 
     char* temp = malloc(14 * sizeof(char));
     do {
-    	printf("hash no comeco: %d\n", hash);
+    	//printf("hash no comeco: %d\n", hash);
         if (hash >= N) { //quando atinge o final do arquivo
             if (posicaoVerdadeira == 0) {
                 break;
@@ -254,6 +254,9 @@ void insereRegistro(LIVRO* dados, FILE** fp_biblioteca, FILE** fp_hash) {
         // printf("posicao: %d\n", ftell(*fp_hash) / TAM_CHAVE);
         temp[13] = '\0';
         // printf("temp: %s\n", temp);
+        if (strcmp(key.isbn, temp) == 0) {
+        	break;
+		}
         if ((strcmp(temp, TRUE_EMPTY) != 0) && (strcmp(temp, FAKE_EMPTY) != 0)) {
             printf("Colisao\n");
             printf("Tentativa %d\n", contador);
@@ -268,18 +271,19 @@ void insereRegistro(LIVRO* dados, FILE** fp_biblioteca, FILE** fp_hash) {
             fwrite(&key.bOS, sizeof(int), 1, *fp_hash);
             escreveu = true;
         }
-        printf("hash no final: %d\n", hash);
+        //printf("hash no final: %d\n", hash);
     }while(!escreveu);
 
     if (escreveu) {
         printf("Chave %s inserida com sucesso\n", key.isbn);
         fwrite(&registro, sizeof(registro), 1, *fp_biblioteca);
-        a++;
-        rewind(*fp_biblioteca);
-        fwrite(&a, sizeof(int), 1, *fp_biblioteca);
     } else {
-        printf("Chave %s nao inserida (NAO HA ESPACO)\n", key.isbn);
+        printf("Chave %s nao inserida\n", key.isbn);
     }
+    
+    a++;
+    rewind(*fp_biblioteca);
+    fwrite(&a, sizeof(int), 1, *fp_biblioteca);
 
     bibliotecaClose(fp_biblioteca);
     fclose(*fp_hash);
