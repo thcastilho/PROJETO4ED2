@@ -316,7 +316,7 @@ void removeRegistro(char** dados, FILE** fp_biblioteca, FILE** fp_hash) {
         return;
     }
 
-    char* key;
+    char* key = malloc(14 * sizeof(char));
     strcpy(key, dados[b]);
 
     int hash = divisaoInteira(atoll(key));
@@ -432,7 +432,7 @@ void buscaRegistro(char** dados, FILE** fp_biblioteca, FILE** fp_hash) {
 	LIVRO livro_temp;
 	
 	if(encontrou){
-		printf("Chave %s encontrada, endereço %d, %d acessos\n", key, hash-1, acessos);
+		printf("Chave %s encontrada, endereÃ§o %d, %d acessos\n", key, hash-1, acessos);
 		//printa o registro encontrado
 		fseek(*fp_biblioteca, chave.bOS, SEEK_SET);
 		fread(&livro_temp, sizeof(LIVRO), 1, *fp_biblioteca);
